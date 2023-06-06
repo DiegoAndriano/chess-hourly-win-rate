@@ -10,7 +10,7 @@ import (
   "github.com/gin-gonic/gin"
 )
 
-var name string = "DiegoAndriano"
+var name string = ""
 
 var draws [24]float32
 var wins [24]float32
@@ -29,7 +29,7 @@ func handleDraws(game []string){
   }
 }
 
-func handleWins(game []string) {
+func handleWhiteWon(game []string) {
  if(strings.Contains(game[6], "1-0")){
   if(strings.Contains(game[4], name)){
     re := regexp.MustCompile(`"[^"]+"`)
@@ -46,7 +46,7 @@ func handleWins(game []string) {
   }
 }
 }
-func handleLosses(game []string) {
+func handleBlackWon(game []string) {
   if(strings.Contains(game[6], "0-1")){
     if(strings.Contains(game[5], name)){
       re := regexp.MustCompile(`"[^"]+"`)
@@ -62,6 +62,23 @@ func handleLosses(game []string) {
 
       totalLosses[hour]++
       losses[hour]++
+    }
+  }
+}
+
+func getRates() {
+  for i, v := range draws {
+    if(v > 0){
+      drawrate := ((v) / (totalWins[i] + totalDraws[i] + totalLosses[i])) * 100.0
+      draws[i] = drawrate
+    }
+    if(wins[i] > 0){
+      winrate := ((wins[i]) / (totalWins[i] + totalDraws[i] + totalLosses[i])) * 100.0
+      wins[i] = winrate
+    }
+    if(losses[i] > 0){
+      lossrate := ((losses[i]) / (totalWins[i] + totalDraws[i] + totalLosses[i])) * 100.0
+      losses[i] = lossrate
     }
   }
 }
@@ -91,34 +108,21 @@ func getGames(username string, format string) string {
 
     r.GET("/", func(c *gin.Context) {
       username, format := c.Query("username"), c.Query("format")
-
+      name = username
       games := getGames(username, format)
 
       arr := strings.Split(games, "\n\n\n")[0:]
       for _, v := range arr {
         game := strings.Split(v, "[")
         if(len(game) > 1){
-          fmt.Printf("%s", game)
           handleDraws(game)
-          handleWins(game)
-          handleLosses(game)
-        }
-      }
-      for i, v := range draws {
-        if(v > 0){
-          drawrate := ((v) / (totalWins[i] + totalDraws[i] + totalLosses[i])) * 100.0
-          draws[i] = drawrate
-        }
-        if(wins[i] > 0){
-          winrate := ((wins[i]) / (totalWins[i] + totalDraws[i] + totalLosses[i])) * 100.0
-          wins[i] = winrate
-        }
-        if(losses[i] > 0){
-          lossrate := ((losses[i]) / (totalWins[i] + totalDraws[i] + totalLosses[i])) * 100.0
-          losses[i] = lossrate
+          handleWhiteWon(game)
+          handleBlackWon(game)
         }
       }
 
+      getRates()
+      
       c.JSON(http.StatusOK, gin.H{
         "00": fmt.Sprintf("w%f l%f d%f", wins[0], losses[0], draws[0]),
         "01": fmt.Sprintf("w%f l%f d%f", wins[1], losses[1], draws[1]),
