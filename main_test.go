@@ -212,3 +212,8 @@ func TestGetRates(t *testing.T){
         t.Errorf("Result was incorrect, got: %f, want: ~47", draws[0])
     }
 }
+
+func TestGetGames(t *testing.T){
+
+
+}

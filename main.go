@@ -83,11 +83,26 @@ func getRates() {
   }
 }
 
-func getGames(username string, format string) string {
+func loopArray(games string){
+  arr := strings.Split(games, "\n\n\n")[0:]
+  for _, v := range arr {
+    game := strings.Split(v, "[")
+    if(len(game) > 1){
+      handleDraws(game)
+      handleWhiteWon(game)
+      handleBlackWon(game)
+    }
+  }
+}
+
+type API struct {
+  Client *http.Client
+}
+
+func getGames(api *API ,username string, format string) string {
   url := fmt.Sprintf("https://lichess.org/api/games/user/%s?analysed=false&evals=false&perfType=%s", username, format)
 
-    var client http.Client
-    resp, err := client.Get(url)
+    resp, err := api.Get(url)
     if err != nil {
       fmt.Printf("%v", err)
     }
@@ -109,18 +124,7 @@ func getGames(username string, format string) string {
     r.GET("/", func(c *gin.Context) {
       username, format := c.Query("username"), c.Query("format")
       name = username
-      games := getGames(username, format)
-
-      arr := strings.Split(games, "\n\n\n")[0:]
-      for _, v := range arr {
-        game := strings.Split(v, "[")
-        if(len(game) > 1){
-          handleDraws(game)
-          handleWhiteWon(game)
-          handleBlackWon(game)
-        }
-      }
-
+      loopArray(getGames(http.Client , username, format))
       getRates()
       
       c.JSON(http.StatusOK, gin.H{
